@@ -177,27 +177,27 @@ Team Stats page
 //render page
 app.get('/team_stats', function(req, res) {
     var query1 = 'select * from football_games;';
-    var query2 = 'select COUNT(*) from football_games WHERE home_score > visitor_score;';
-    var query3 = 'select COUNT(*) from football_games WHERE home_score < visitor_score;';
+    var wins = 'select COUNT(*) from football_games WHERE home_score > visitor_score;';
+    var losses = 'select COUNT(*) from football_games WHERE home_score < visitor_score;';
     db.task('get-everything', task => {
         return task.batch([
           task.any(query1),
-          task.any(query2),
-          task.any(query3),
+          task.any(wins),
+          task.any(losses),
         ]);
   })
   .then(data => {
     res.render('pages/team_stats',{
         my_title: "Team Stats",
         games: data[0],
-        wins: data[1],
-        losses: data[2]
+        wins: data[1][0].count,
+        losses: data[2][0].count
       })
   })
   .catch(error => {
       // display error message in case an error
       console.log('error', err);
-      res.render('pages/page_name',{
+      res.render('pages/team_stats',{
           my_title: "Team Stats",
           games: '',
           wins: '',
@@ -235,7 +235,7 @@ app.get('/player_info/select_player', function(req, res) {
   console.log(id)
 	var players =  'SELECT * FROM football_players;';
 	var player = "select * from football_players where id = " + id + ";";
-  var games = "select count(*) from football_games where " + id + " IN players;";
+  var games = "select count(*) from football_games where '" + id + "' = ANY( players );";
 	db.task('get-everything', task => {
         return task.batch([
             task.any(players),
@@ -244,17 +244,17 @@ app.get('/player_info/select_player', function(req, res) {
         ]);
     })
     .then(info => {
-    	res.render('/player_info/select_player',{
+    	res.render('pages/player_info',{
 				my_title: "Player page",
 				data: info[0],
-				player: info[1],
-				games: info[2]
+				player: info[1][0],
+				games: info[2][0].count
 			})
     })
     .catch(error => {
         // display error message in case an error
             console.log('error', error);//if this doesn't work for you replace with console.log
-            res.render('pages/home', {
+            res.render('pages/player_info', {
                 title: 'Player page',
                 data: '',
         				player: '',
